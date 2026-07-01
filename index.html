@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Asistente de Salud y Skincare</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>✨ Mi Asistente de Salud & Skincare</h1>
+        <p>Hola Steph! Vamos a cuidar el cuerpo y la piel todos los días.</p>
+    </header>
+
+    <main>
+        <section id="formulario-registro">
+            <h2>Agregar Nuevo Recordatorio</h2>
+            <form>
+                <label for="tipo">Categoría:</label>
+                <select id="tipo" required>
+                    <option value="">-- Selecciona una opción --</option>
+                    <option value="medicina">💊 Medicamento (Oral/Oftálmico)</option>
+                    <option value="skincare">🧴 Skincare / Tópico</option>
+                </select>
+
+                <label for="producto">Nombre del Producto / Medicamento:</label>
+                <input type="text" id="producto" placeholder="Ej. Vitamina o Serum" required>
+
+                <label for="cantidad">Dosis o Aplicación:</label>
+                <input type="text" id="cantidad" placeholder="Ej. 1 tableta, capa delgada, 2 gotas" required>
+
+                <label for="momento">¿En qué momento te toca?:</label>
+                <select id="momento" required>
+                    <option value="">-- Selecciona el momento --</option>
+                    <option value="desayuno">☀️ Mañana / Desayuno</option>
+                    <option value="comida">🌤️ Tarde / Comida</option>
+                    <option value="cena">🌙 Noche / Cena</option>
+                    <option value="manana-noche">☀️🌙 Mañana y Noche</option>
+                    <option value="especifica">⏰ Hora Específica</option>
+                </select>
+
+                <div id="bloque-hora-especifica" style="display: none;">
+                    <label for="hora">Indica la hora exacta:</label>
+                    <input type="time" id="hora">
+                </div>
+
+
+                <label>¿Qué días debes usarlo?:</label>
+                <div class="contenedor-dias">
+                    <label class="dia-check"><input type="checkbox" name="dias" value="Lun"> L</label>
+                    <label class="dia-check"><input type="checkbox" name="dias" value="Mar"> M</label>
+                    <label class="dia-check"><input type="checkbox" name="dias" value="Mié"> Mi</label>
+                    <label class="dia-check"><input type="checkbox" name="dias" value="Jue"> J</label>
+                    <label class="dia-check"><input type="checkbox" name="dias" value="Vie"> V</label>
+                    <label class="dia-check"><input type="checkbox" name="dias" value="Sáb"> S</label>
+                    <label class="dia-check"><input type="checkbox" name="dias" value="Dom"> D</label>
+                </div>
+
+                <label for="fechaTermino">¿Hasta cuándo? (Fecha de término):</label>
+                <input type="date" id="fechaTermino">
+
+                <label for="notas">Instrucciones de la receta (Notas):</label>
+                <textarea id="notas" rows="3" placeholder="Ej. Tomar 12 hrs después de comer por 3 meses, aplicar solo en las manchas..."></textarea>
+
+                <button type="submit">Guardar en mi Rutina</button>
+            </form>
+        </section>
+
+        <hr>
+
+        <section id="lista-recordatorios">
+            <h2>Mi Rutina Programada</h2>
+            <div id="contenedor-tarjetas">
+                </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
