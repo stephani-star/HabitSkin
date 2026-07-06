@@ -4,6 +4,10 @@ const momentoSelect = document.getElementById('momento');
 const bloqueHoraEspecifica = document.getElementById('bloque-hora-especifica');
 const inputHora = document.getElementById('hora');
 
+// LLAVES MAESTRAS DE TELEGRAM
+const TELEGRAM_TOKEN = '8979727245:AAGks6dgCdNm9wz7oM3Z8vOp6OFIYB6eTAc';
+const TELEGRAM_CHAT_ID = '1879289573';
+
 let listaMedicamentos = [];
 
 // Truco visual: Mostrar u ocultar el reloj según lo que selecciones
@@ -18,6 +22,52 @@ momentoSelect.addEventListener('change', function() {
     }
 });
 
+// FUNCIÓN PARA MANDAR MENSAJE DE CONFIRMACIÓN / RECORDATORIO A TELEGRAM
+function enviarNotificacionTelegram(item) {
+    let emoji = item.tipo === 'skincare' ? '🧴' : '💊';
+    
+    let textoMomento = '';
+    if (item.momento === 'desayuno') textoMomento = '☀️ Mañana / Desayuno';
+    else if (item.momento === 'comida') textoMomento = '🌤️ Tarde / Comida';
+    else if (item.momento === 'cena') textoMomento = '🌙 Noche / Cena';
+    else if (item.momento === 'manana-noche') textoMomento = '☀️🌙 Mañana y Noche';
+    else if (item.momento === 'especifica') textoMomento = `⏰ Hora exacta: ${item.hora}`;
+
+    let textoFecha = item.fechaTermino ? item.fechaTermino : '♾️ Uso continuo';
+
+    // Construimos el mensaje con formato lindo usando emojis
+    const mensaje = `✨ *¡Nuevo Recordatorio Programado!* ✨\n\n` +
+                    `${emoji} *Producto:* ${item.producto}\n` +
+                    `✨ *Dosis:* ${item.cantidad}\n` +
+                    `⏰ *Momento:* ${textoMomento}\n` +
+                    `📅 *Días:* ${item.dias}\n` +
+                    `🛑 *Termina:* ${textoFecha}\n` +
+                    `${item.notas ? `📝 *Notas:* ${item.notas}` : ''}`;
+
+    // Llamada oficial a la API de Telegram para enviar el mensaje en tiempo real
+    const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: mensaje,
+            parse_mode: 'Markdown' // Permite poner letras en negritas
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('Error al enviar a Telegram');
+        } else {
+            console.log('¡Notificación enviada con éxito a Telegram!');
+        }
+    })
+    .catch(error => console.error('Error de red:', error));
+}
+
 // 1. FUNCIÓN PARA DIBUJAR LAS TARJETAS EN PANTALLA
 function renderizarTarjetas() {
     contenedorTarjetas.innerHTML = '';
@@ -28,17 +78,10 @@ function renderizarTarjetas() {
     }
 
     listaMedicamentos.forEach((item) => {
-        let emoji = '💊';
-        let colorFondo = '#f3e5f5'; // Morado tierno para medicina
-        let colorBorde = '#e1bee7';
+        let emoji = item.tipo === 'skincare' ? '🧴' : '💊';
+        let colorFondo = item.tipo === 'skincare' ? '#ffe0b2' : '#fff9c4'; 
+        let colorBorde = item.tipo === 'skincare' ? '#ffcc80' : '#fff59d';
 
-        if (item.tipo === 'skincare') {
-            emoji = '🧴';
-            colorFondo = '#fff0f3'; // Rosa tierno para skincare
-            colorBorde = '#ffccd5';
-        }
-
-        // LÓGICA DEL MOMENTO DEL DÍA Y EMOJIS
         let textoMomento = '';
         if (item.momento === 'desayuno') textoMomento = '☀️ Mañana / Desayuno';
         else if (item.momento === 'comida') textoMomento = '🌤️ Tarde / Comida';
@@ -50,8 +93,6 @@ function renderizarTarjetas() {
             textoMomento = `${emojiSolLuna} Hora exacta: ${item.hora}`;
         }
 
-        // LÓGICA PARA LA FECHA DE TÉRMINO OPCIONAL
-        // Si hay fecha, la muestra; si está vacía, pone Uso Continuo
         let textoFechaTermino = item.fechaTermino ? item.fechaTermino : '♾️ Uso continuo';
 
         const nuevaTarjeta = document.createElement('div');
@@ -63,8 +104,8 @@ function renderizarTarjetas() {
         nuevaTarjeta.style.textAlign = 'left';
 
         nuevaTarjeta.innerHTML = `
-            <h3 style="margin: 0 0 8px 0; color: #5d4d6a; font-size: 1.3rem;">${emoji} ${item.producto}</h3>
-            <p style="margin: 0; font-size: 0.95rem; color: #5d4d6a; line-height: 1.4; margin-bottom: 10px;">
+            <h3 style="margin: 0 0 8px 0; color: #4e342e; font-size: 1.3rem;">${emoji} ${item.producto}</h3>
+            <p style="margin: 0; font-size: 0.95rem; color: #4e342e; line-height: 1.4; margin-bottom: 10px;">
                 <strong>✨ Dosis/Aplicación:</strong> ${item.cantidad} <br>
                 <strong>⏰ Momento:</strong> ${textoMomento} <br>
                 <strong>📅 Días:</strong> ${item.dias} <br>
@@ -78,8 +119,8 @@ function renderizarTarjetas() {
             ` : ''}
 
             <div style="text-align: right;">
-                <button onclick="editarRecordatorio('${item.id}')" style="width: auto; padding: 5px 12px; font-size: 0.85rem; background-color: #ffe082; border-color: #ffd54f; box-shadow: 0px 2px 0px #ffd54f; margin-right: 5px; color: #5d4d6a;">✏️ Editar</button>
-                <button onclick="borrarRecordatorio('${item.id}')" style="width: auto; padding: 5px 12px; font-size: 0.85rem; background-color: #ffab91; border-color: #ff8a65; box-shadow: 0px 2px 0px #ff8a65; color: white;">🗑️ Borrar</button>
+                <button onclick="editarRecordatorio('${item.id}')" style="width: auto; padding: 5px 12px; font-size: 0.85rem; background-color: #fff9c4; border-color: #fff59d; box-shadow: 0px 2px 0px #fff59d; margin-right: 5px; color: #4e342e; border-style: solid; border-width: 1px; border-radius: 5px; cursor: pointer;">✏️ Editar</button>
+                <button onclick="borrarRecordatorio('${item.id}')" style="width: auto; padding: 5px 12px; font-size: 0.85rem; background-color: #ffcc80; border-color: #ffb74d; box-shadow: 0px 2px 0px #ffb74d; color: #4e342e; border-style: solid; border-width: 1px; border-radius: 5px; cursor: pointer;">🗑️ Borrar</button>
             </div>
         `;
 
@@ -88,11 +129,11 @@ function renderizarTarjetas() {
 }
 
 function guardarEnStorage() {
-    localStorage.setItem('misMedicamentosPurosV2', JSON.stringify(listaMedicamentos));
+    localStorage.setItem('misMedicamentosPurosV4', JSON.stringify(listaMedicamentos));
 }
 
 function cargarRecordatorios() {
-    const datosGuardados = localStorage.getItem('misMedicamentosPurosV2');
+    const datosGuardados = localStorage.getItem('misMedicamentosPurosV4');
     if (datosGuardados) {
         listaMedicamentos = JSON.parse(datosGuardados);
     }
@@ -126,15 +167,19 @@ formulario.addEventListener('submit', function(evento) {
         momento,
         hora,
         dias: diasSeleccionados,
-        fechaTermino, // Puede ir vacío
+        fechaTermino,
         notas
     };
 
     listaMedicamentos.push(nuevoItem);
     guardarEnStorage();
     renderizarTarjetas();
+    
+    // 🔥 ENVIAR NOTIFICACIÓN AUTOMÁTICA AL GUARDAR
+    enviarNotificacionTelegram(nuevoItem);
+
     formulario.reset();
-    bloqueHoraEspecifica.style.display = 'none'; // Re-ocultamos el campo de hora
+    bloqueHoraEspecifica.style.display = 'none';
 });
 
 function borrarRecordatorio(idABorrar) {
