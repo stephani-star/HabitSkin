@@ -9,8 +9,9 @@ const TELEGRAM_TOKEN = '8979727245:AAGks6dgCdNm9wz7oM3Z8vOp6OFIYB6eTAc';
 const TELEGRAM_CHAT_ID = '1879289573';
 
 let listaMedicamentos = [];
+let temporizadoresAlarmas = {}; // Guarda la referencia de las alarmas activas
 
-// Truco visual: Mostrar u ocultar el reloj según lo que selecciones
+// Mostrar u ocultar el reloj según lo que selecciones
 momentoSelect.addEventListener('change', function() {
     if (momentoSelect.value === 'especifica') {
         bloqueHoraEspecifica.style.display = 'block';
@@ -18,12 +19,12 @@ momentoSelect.addEventListener('change', function() {
     } else {
         bloqueHoraEspecifica.style.display = 'none';
         inputHora.required = false;
-        inputHora.value = ''; // Limpiamos la hora
+        inputHora.value = '';
     }
 });
 
-// FUNCIÓN PARA MANDAR MENSAJE DE CONFIRMACIÓN / RECORDATORIO A TELEGRAM
-function enviarNotificacionTelegram(item) {
+// FUNCIÓN PARA ENVIAR MENSAJE A TELEGRAM
+function enviarNotificacionTelegram(item, esAlarmaProgramada = false) {
     let emoji = item.tipo === 'skincare' ? '🧴' : '💊';
     
     let textoMomento = '';
@@ -35,8 +36,11 @@ function enviarNotificacionTelegram(item) {
 
     let textoFecha = item.fechaTermino ? item.fechaTermino : '♾️ Uso continuo';
 
-    // Construimos el mensaje con formato lindo usando emojis
-    const mensaje = `✨ *¡Nuevo Recordatorio Programado!* ✨\n\n` +
+    let tituloHeader = esAlarmaProgramada 
+        ? `⏰ *¡ATENCIÓN: HORA DE TU MEDICAMENTO / SKINCARE!* ⏰`
+        : `✨ *¡Nuevo Recordatorio Programado!* ✨`;
+
+    const mensaje = `${tituloHeader}\n\n` +
                     `${emoji} *Producto:* ${item.producto}\n` +
                     `✨ *Dosis:* ${item.cantidad}\n` +
                     `⏰ *Momento:* ${textoMomento}\n` +
@@ -44,31 +48,73 @@ function enviarNotificacionTelegram(item) {
                     `🛑 *Termina:* ${textoFecha}\n` +
                     `${item.notas ? `📝 *Notas:* ${item.notas}` : ''}`;
 
-    // Llamada oficial a la API de Telegram para enviar el mensaje en tiempo real
     const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
     
     fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             chat_id: TELEGRAM_CHAT_ID,
             text: mensaje,
-            parse_mode: 'Markdown' // Permite poner letras en negritas
+            parse_mode: 'Markdown'
         })
     })
     .then(response => {
-        if (!response.ok) {
-            console.error('Error al enviar a Telegram');
+        if (response.ok) {
+            console.log('Notificación de Telegram enviada exitosamente.');
         } else {
-            console.log('¡Notificación enviada con éxito a Telegram!');
+            console.error('Error al enviar a Telegram');
         }
     })
-    .catch(error => console.error('Error de red:', error));
+    .catch(error => console.error('Error de red al conectar con Telegram:', error));
 }
 
-// 1. FUNCIÓN PARA DIBUJAR LAS TARJETAS EN PANTALLA
+// PROGRAMA LA ALARMA EXACTA SEGÚN LA HORA ASIGNADA
+function programarAlarmaEspecifica(item) {
+    if (item.momento !== 'especifica' || !item.hora) return;
+
+    // Cancelar alarma previa si ya existía para evitar duplicados
+    if (temporizadoresAlarmas[item.id]) {
+        clearTimeout(temporizadoresAlarmas[item.id]);
+    }
+
+    const [horas, minutos] = item.hora.split(':').map(Number);
+    const ahora = new Date();
+    const objetivo = new Date();
+
+    objetivo.setHours(horas, minutos, 0, 0);
+
+    // Si la hora de hoy ya pasó, se programa para mañana a la misma hora
+    if (objetivo <= ahora) {
+        objetivo.setDate(objetivo.getDate() + 1);
+    }
+
+    const tiempoRestanteMs = objetivo.getTime() - ahora.getTime();
+
+    console.log(`Alarma programada para "${item.producto}" en ${(tiempoRestanteMs / 1000 / 60).toFixed(1)} minutos.`);
+
+    temporizadoresAlarmas[item.id] = setTimeout(() => {
+        enviarNotificacionTelegram(item, true); // Enviar mensaje a la hora exacta
+        programarAlarmaEspecifica(item); // Reprogramar automáticamente para el día siguiente
+    }, tiempoRestanteMs);
+}
+
+// PROGRAMAR TODAS LAS ALARMAS DE LA LISTA
+function reprogramarTodasLasAlarmas() {
+    // Limpiar temporizadores existentes
+    Object.keys(temporizadoresAlarmas).forEach(id => {
+        clearTimeout(temporizadoresAlarmas[id]);
+    });
+    temporizadoresAlarmas = {};
+
+    listaMedicamentos.forEach(item => {
+        if (item.momento === 'especifica') {
+            programarAlarmaEspecifica(item);
+        }
+    });
+}
+
+// RENDERIZAR TARJETAS EN PANTALLA
 function renderizarTarjetas() {
     contenedorTarjetas.innerHTML = '';
 
@@ -129,15 +175,16 @@ function renderizarTarjetas() {
 }
 
 function guardarEnStorage() {
-    localStorage.setItem('misMedicamentosPurosV4', JSON.stringify(listaMedicamentos));
+    localStorage.setItem('misMedicamentosPurosV5', JSON.stringify(listaMedicamentos));
 }
 
 function cargarRecordatorios() {
-    const datosGuardados = localStorage.getItem('misMedicamentosPurosV4');
+    const datosGuardados = localStorage.getItem('misMedicamentosPurosV5');
     if (datosGuardados) {
         listaMedicamentos = JSON.parse(datosGuardados);
     }
     renderizarTarjetas();
+    reprogramarTodasLasAlarmas();
 }
 
 formulario.addEventListener('submit', function(evento) {
@@ -175,14 +222,21 @@ formulario.addEventListener('submit', function(evento) {
     guardarEnStorage();
     renderizarTarjetas();
     
-    // 🔥 ENVIAR NOTIFICACIÓN AUTOMÁTICA AL GUARDAR
-    enviarNotificacionTelegram(nuevoItem);
+    // Notificación inmediata de confirmación
+    enviarNotificacionTelegram(nuevoItem, false);
+
+    // Programar la alarma a la hora exacta
+    programarAlarmaEspecifica(nuevoItem);
 
     formulario.reset();
     bloqueHoraEspecifica.style.display = 'none';
 });
 
 function borrarRecordatorio(idABorrar) {
+    if (temporizadoresAlarmas[idABorrar]) {
+        clearTimeout(temporizadoresAlarmas[idABorrar]);
+        delete temporizadoresAlarmas[idABorrar];
+    }
     listaMedicamentos = listaMedicamentos.filter(item => item.id !== idABorrar);
     guardarEnStorage();
     renderizarTarjetas();
