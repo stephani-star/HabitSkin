@@ -2,7 +2,6 @@ name: Notificador de Medicamentos HabitSkin
 
 on:
   schedule:
-    # Se ejecuta cada minuto
     - cron: '* * * * *'
   workflow_dispatch:
 
@@ -13,22 +12,21 @@ jobs:
       - name: Ejecutar revisión de alarmas
         env:
           SUPABASE_URL: 'https://yrqxopmgwwzrgzwcdusy.supabase.co'
-          SUPABASE_KEY: 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg...' # Pega tu llave completa aquí
+          SUPABASE_KEY: 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg--5zK4' # Tu llave completa aquí
           TELEGRAM_TOKEN: '8979727245:AAGks6dgCdNm9wZ7oM3Z8VOp60FIYB6eTAc'
           TELEGRAM_CHAT_ID: '1879289573'
         run: |
           node -e "
           const https = require('https');
 
-          // Obtener hora actual en zona horaria de México/América Latina (America/Mexico_City)
           const ahora = new Date();
           const opciones = { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', hour12: false };
           const horaActual = new Intl.DateTimeFormat('es-MX', opciones).format(ahora);
 
           console.log('Revisando alarmas para la hora local:', horaActual);
 
-          // Consultar Supabase
-          const url = \`\${process.env.SUPABASE_URL}/rest/v1/medicamentos?momento=eq.especifica&hora=eq.\${horaActual}\`;
+          // Buscar coincidencia que empiece por HH:MM (sirve para 12:18 o 12:18:00)
+          const url = \`\${process.env.SUPABASE_URL}/rest/v1/medicamentos?momento=eq.especifica&hora=like.\${encodeURIComponent(horaActual + '*')}\`;
           
           const req = https.request(url, {
             headers: {
@@ -46,7 +44,6 @@ jobs:
                     const emoji = item.tipo === 'skincare' ? '🧴' : '💊';
                     const mensaje = \`⏰ *¡HORA DE TU MEDICAMENTO!*\n\n\${emoji} *\${item.nombre}*\n📌 *Dosis:* \${item.dosis || 'Tomar según indicación'}\n🕒 *Hora:* \${item.hora}\`;
                     
-                    // Enviar a Telegram
                     const telegramUrl = \`https://api.telegram.org/bot\${process.env.TELEGRAM_TOKEN}/sendMessage\`;
                     const postData = JSON.stringify({
                       chat_id: process.env.TELEGRAM_CHAT_ID,
@@ -64,6 +61,7 @@ jobs:
                     tReq.write(postData);
                     tReq.end();
                   });
+                  console.log('¡Notificación enviada a Telegram!');
                 } else {
                   console.log('No hay medicamentos programados para la hora actual:', horaActual);
                 }
