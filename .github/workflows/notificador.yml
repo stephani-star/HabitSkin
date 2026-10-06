@@ -12,7 +12,7 @@ jobs:
       - name: Ejecutar revisión de alarmas
         env:
           SUPABASE_URL: 'https://yrqxopmgwwzrgzwcdusy.supabase.co'
-          SUPABASE_KEY: 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg--5zK4' # Tu llave completa aquí
+          SUPABASE_KEY: 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg--5zK4' # Tu llave completa de Supabase
           TELEGRAM_TOKEN: '8979727245:AAGks6dgCdNm9wZ7oM3Z8VOp60FIYB6eTAc'
           TELEGRAM_CHAT_ID: '1879289573'
         run: |
@@ -21,11 +21,11 @@ jobs:
 
           const ahora = new Date();
           const opciones = { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', hour12: false };
-          const horaActual = new Intl.DateTimeFormat('es-MX', opciones).format(ahora);
+          const horaActual = new Intl.DateTimeFormat('es-MX', opciones).format(ahora).trim();
 
-          console.log('Revisando alarmas para la hora local:', horaActual);
+          console.log('--- REVISIÓN DE ALARMAS ---');
+          console.log('Hora local actual (HH:MM):', \`'\${horaActual}'\`);
 
-          // Traer todos los registros con hora específica
           const url = \`\${process.env.SUPABASE_URL}/rest/v1/medicamentos?momento=eq.especifica\`;
           
           const req = https.request(url, {
@@ -40,11 +40,17 @@ jobs:
               try {
                 const items = JSON.parse(body);
                 if (Array.isArray(items)) {
-                  // Filtrar los que coincidan con HH:MM independientemente de si tienen :00
-                  const coincidentes = items.filter(item => item.hora && item.hora.startsWith(horaActual));
+                  console.log('Total de registros encontrados:', items.length);
+
+                  const coincidentes = items.filter(item => {
+                    if (!item.hora) return false;
+                    const horaGuardada = String(item.hora).trim();
+                    console.log(\`Evaluando: \${item.nombre} -> hora guardada: '\${horaGuardada}'\`);
+                    // Compara si la hora guardada empieza con la hora actual (ej. 16:40 vs 16:40:00)
+                    return horaGuardada.startsWith(horaActual);
+                  });
                   
-                  console.log('Registros encontrados en total:', items.length);
-                  console.log('Registros para este minuto:', coincidentes.length);
+                  console.log('Alarmas encontradas para este minuto:', coincidentes.length);
 
                   coincidentes.forEach(item => {
                     const emoji = item.tipo === 'skincare' ? '🧴' : '💊';
@@ -66,6 +72,7 @@ jobs:
                     });
                     tReq.write(postData);
                     tReq.end();
+                    console.log(\`✅ Notificación enviada para: \${item.nombre}\`);
                   });
                 }
               } catch (e) {
