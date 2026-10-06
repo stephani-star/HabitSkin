@@ -1,0 +1,78 @@
+name: Notificador de Medicamentos HabitSkin
+
+on:
+  schedule:
+    # Se ejecuta cada minuto
+    - cron: '* * * * *'
+  workflow_dispatch:
+
+jobs:
+  check-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ejecutar revisión de alarmas
+        env:
+          SUPABASE_URL: 'https://yrqxopmgwwzrgzwcdusy.supabase.co'
+          SUPABASE_KEY: 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg--5zK4' # Pega tu misma llave de Supabase aquí
+          TELEGRAM_TOKEN: '8979727245:AAGks6dgCdNm9wZ7oM3Z8VOp60FIYB6eTAc'
+          TELEGRAM_CHAT_ID: '1879289573'
+        run: |
+          node -e "
+          const https = require('https');
+
+          // Obtener hora actual en formato HH:MM
+          const ahora = new Date();
+          // Ajusta a tu zona horaria si es necesario
+          const horas = String(ahora.getHours()).padStart(2, '0');
+          const minutos = String(ahora.getMinutes()).padStart(2, '0');
+          const horaActual = \`\${horas}:\${minutos}\`;
+
+          console.log('Revisando alarmas para la hora:', horaActual);
+
+          // Consultar Supabase
+          const url = \`\${process.env.SUPABASE_URL}/rest/v1/medicamentos?momento=eq.especifica&hora=eq.\${horaActual}\`;
+          
+          const req = https.request(url, {
+            headers: {
+              'apikey': process.env.SUPABASE_KEY,
+              'Authorization': \`Bearer \${process.env.SUPABASE_KEY}\`
+            }
+          }, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+              try {
+                const items = JSON.parse(body);
+                if (Array.isArray(items) && items.length > 0) {
+                  items.forEach(item => {
+                    const emoji = item.tipo === 'skincare' ? '🧴' : '💊';
+                    const mensaje = \`⏰ *¡HORA DE TU MEDICAMENTO!*\n\n\${emoji} *\${item.nombre}*\n📌 *Dosis:* \${item.dosis || 'Tomar según indicación'}\n🕒 *Hora:* \${item.hora}\`;
+                    
+                    // Enviar a Telegram
+                    const telegramUrl = \`https://api.telegram.org/bot\${process.env.TELEGRAM_TOKEN}/sendMessage\`;
+                    const postData = JSON.stringify({
+                      chat_id: process.env.TELEGRAM_CHAT_ID,
+                      text: mensaje,
+                      parse_mode: 'Markdown'
+                    });
+
+                    const tReq = https.request(telegramUrl, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(postData)
+                      }
+                    });
+                    tReq.write(postData);
+                    tReq.end();
+                  });
+                } else {
+                  console.log('No hay medicamentos programados para esta hora.');
+                }
+              } catch (e) {
+                console.error('Error parseando respuesta:', e);
+              }
+            });
+          });
+          req.end();
+          "
