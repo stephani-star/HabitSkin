@@ -1,12 +1,8 @@
 // CONFIGURACIÓN DE SUPABASE
 const SUPABASE_URL = 'https://yrqxopmgwwzrgzwcdusy.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg--5zK4'; // Pega aquí tu llave completa
+const SUPABASE_KEY = 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg...'; // Pega tu llave completa aquí
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// CONFIGURACIÓN DE TELEGRAM
-const TELEGRAM_TOKEN = '8979727245:AAGks6dgCdNm9wZ7oM3Z8VOp60FIYB6eTAc';
-const TELEGRAM_CHAT_ID = '1879289573';
 
 const formulario = document.querySelector('form');
 const contenedorTarjetas = document.getElementById('contenedor-tarjetas');
@@ -17,29 +13,35 @@ const inputHora = document.getElementById('hora');
 if (momentoSelect) {
   momentoSelect.addEventListener('change', function() {
     if (momentoSelect.value === 'especifica') {
-      bloqueHoraEspecifica.style.display = 'block';
-      inputHora.required = true;
+      if (bloqueHoraEspecifica) bloqueHoraEspecifica.style.display = 'block';
+      if (inputHora) inputHora.required = true;
     } else {
-      bloqueHoraEspecifica.style.display = 'none';
-      inputHora.required = false;
-      inputHora.value = '';
+      if (bloqueHoraEspecifica) bloqueHoraEspecifica.style.display = 'none';
+      if (inputHora) {
+        inputHora.required = false;
+        inputHora.value = '';
+      }
     }
   });
 }
 
 // Cargar medicamentos desde Supabase
 async function cargarMedicamentos() {
-  const { data, error } = await supabaseClient
-    .from('medicamentos')
-    .select('*')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabaseClient
+      .from('medicamentos')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error al cargar datos:', error);
-    return;
+    if (error) {
+      console.error('Error al cargar datos:', error);
+      return;
+    }
+
+    renderizarTarjetas(data);
+  } catch (err) {
+    console.error('Error inesperado al cargar:', err);
   }
-
-  renderizarTarjetas(data);
 }
 
 // Renderizar las tarjetas en la página
@@ -48,7 +50,7 @@ function renderizarTarjetas(lista) {
   contenedorTarjetas.innerHTML = '';
 
   if (!lista || lista.length === 0) {
-    contenedorTarjetas.innerHTML = '<p>No tienes medicamentos o rutinas registradas.</p>';
+    contenedorTarjetas.innerHTML = '<p style="text-align:center; color:#666;">No tienes medicamentos o rutinas registradas.</p>';
     return;
   }
 
@@ -73,21 +75,28 @@ if (formulario) {
   formulario.addEventListener('submit', async function(e) {
     e.preventDefault();
 
+    // Obtener elementos con verificación para evitar errores de null
+    const elemNombre = document.getElementById('nombre');
+    const elemTipo = document.getElementById('tipo');
+    const elemDosis = document.getElementById('dosis');
+    const elemMomento = document.getElementById('momento');
+    const elemHora = document.getElementById('hora');
+
     const nuevoItem = {
-      nombre: document.getElementById('nombre').value,
-      tipo: document.getElementById('tipo').value,
-      dosis: document.getElementById('dosis').value,
-      momento: document.getElementById('momento').value,
-      hora: document.getElementById('hora').value
+      nombre: elemNombre ? elemNombre.value : '',
+      tipo: elemTipo ? elemTipo.value : 'medicamento',
+      dosis: elemDosis ? elemDosis.value : '',
+      momento: elemMomento ? elemMomento.value : '',
+      hora: (elemHora && elemHora.value) ? elemHora.value : null
     };
 
-    const { error } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from('medicamentos')
       .insert([nuevoItem]);
 
     if (error) {
-      console.error('Error al guardar:', error);
-      alert('Ocurrió un error al guardar en la base de datos.');
+      console.error('Error al guardar en Supabase:', error);
+      alert('Error al guardar: ' + error.message);
       return;
     }
 
@@ -106,6 +115,7 @@ async function eliminarMedicamento(id) {
 
   if (error) {
     console.error('Error al eliminar:', error);
+    alert('Error al eliminar: ' + error.message);
     return;
   }
 
