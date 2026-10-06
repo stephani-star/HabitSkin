@@ -25,8 +25,8 @@ jobs:
 
           console.log('Revisando alarmas para la hora local:', horaActual);
 
-          // Buscar coincidencia que empiece por HH:MM (sirve para 12:18 o 12:18:00)
-          const url = \`\${process.env.SUPABASE_URL}/rest/v1/medicamentos?momento=eq.especifica&hora=like.\${encodeURIComponent(horaActual + '*')}\`;
+          // Traer todos los registros con hora específica
+          const url = \`\${process.env.SUPABASE_URL}/rest/v1/medicamentos?momento=eq.especifica\`;
           
           const req = https.request(url, {
             headers: {
@@ -39,8 +39,14 @@ jobs:
             res.on('end', () => {
               try {
                 const items = JSON.parse(body);
-                if (Array.isArray(items) && items.length > 0) {
-                  items.forEach(item => {
+                if (Array.isArray(items)) {
+                  // Filtrar los que coincidan con HH:MM independientemente de si tienen :00
+                  const coincidentes = items.filter(item => item.hora && item.hora.startsWith(horaActual));
+                  
+                  console.log('Registros encontrados en total:', items.length);
+                  console.log('Registros para este minuto:', coincidentes.length);
+
+                  coincidentes.forEach(item => {
                     const emoji = item.tipo === 'skincare' ? '🧴' : '💊';
                     const mensaje = \`⏰ *¡HORA DE TU MEDICAMENTO!*\n\n\${emoji} *\${item.nombre}*\n📌 *Dosis:* \${item.dosis || 'Tomar según indicación'}\n🕒 *Hora:* \${item.hora}\`;
                     
@@ -61,9 +67,6 @@ jobs:
                     tReq.write(postData);
                     tReq.end();
                   });
-                  console.log('¡Notificación enviada a Telegram!');
-                } else {
-                  console.log('No hay medicamentos programados para la hora actual:', horaActual);
                 }
               } catch (e) {
                 console.error('Error parseando respuesta:', e);
