@@ -1,6 +1,6 @@
 // CONFIGURACIÓN DE SUPABASE
 const SUPABASE_URL = 'https://yrqxopmgwwzrgzwcdusy.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg...'; // Pega aquí tu llave completa
+const SUPABASE_KEY = 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg--5zK4'; // Pega aquí tu llave completa
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
