@@ -2,6 +2,10 @@
 const SUPABASE_URL = 'https://yrqxopmgwwzrgzwcdusy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg--5zK4'; // Pega tu llave completa aquí
 
+// CONFIGURACIÓN DE TELEGRAM
+const TELEGRAM_TOKEN = '8979727245:AAGks6dgCdNm9wZ7oM3Z8VOp60FIYB6eTAc'; // Tu token activo de Telegram
+const TELEGRAM_CHAT_ID = '1879289573';
+
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const formulario = document.querySelector('form');
@@ -70,7 +74,7 @@ function renderizarTarjetas(lista) {
   });
 }
 
-// Guardar nuevo medicamento en Supabase
+// Guardar nuevo medicamento en Supabase y enviar notificación a Telegram
 if (formulario) {
   formulario.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -98,6 +102,30 @@ if (formulario) {
       console.error('Error al guardar en Supabase:', error);
       alert('Error al guardar: ' + error.message);
       return;
+    }
+
+    // --- ENVÍO DE NOTIFICACIÓN A TELEGRAM ---
+    const emojiTipo = nuevoItem.tipo === 'skincare' ? '🧴' : '💊';
+    const horarioTexto = nuevoItem.momento === 'especifica' ? `⏰ ${nuevoItem.hora}` : nuevoItem.momento;
+
+    const mensajeTelegram = `✨ *¡Nuevo Recordatorio Programado!* ✨\n\n` +
+      `${emojiTipo} *Producto:* ${nuevoItem.nombre}\n` +
+      `📌 *Dosis:* ${nuevoItem.dosis || 'Según indicación'}\n` +
+      `⏰ *Momento:* ${horarioTexto}`;
+
+    try {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: mensajeTelegram,
+          parse_mode: 'Markdown'
+        })
+      });
+      console.log('Notificación enviada a Telegram');
+    } catch (errTelegram) {
+      console.error('Error al enviar mensaje a Telegram:', errTelegram);
     }
 
     formulario.reset();
