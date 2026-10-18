@@ -12,7 +12,7 @@ jobs:
       - name: Ejecutar revisión de alarmas
         env:
           SUPABASE_URL: 'https://yrqxopmgwwzrgzwcdusy.supabase.co'
-          SUPABASE_KEY: 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg...' # Pega aquí tu llave completa
+          SUPABASE_KEY: 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg--5zK4' # Pega aquí tu llave completa
           TELEGRAM_TOKEN: '8979727245:AAGks6dgCdNm9wZ7oM3Z8VOp60FIYB6eTAc'
           TELEGRAM_CHAT_ID: '1879289573'
         run: |
