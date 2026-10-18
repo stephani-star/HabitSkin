@@ -12,16 +12,31 @@ jobs:
       - name: Ejecutar revisión de alarmas
         env:
           SUPABASE_URL: 'https://yrqxopmgwwzrgzwcdusy.supabase.co'
-          SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycXhvcG1nd3d6cmd6d2NkdXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyODU2MzIsImV4cCI6MjEwNjg2MTYzMn0.ogv_ZIr8STqkMJZhRlQ8XtuXL76IFdnU9t3evJKj78w' # Pega aquí tu llave completa
-          TELEGRAM_TOKEN: '8979727245:AAGks6dgCdNm9wz7oM3Z8vOp6OFIYB6eTAc'
+          SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycXhvcG1nd3d6cmd6d2NkdXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyODU2MzIsImV4cCI6MjEwNjg2MTYzMn0.ogv_ZIr8STqkMJZhRlQ8XtuXL76IFdnU9t3evJKj78w' # Tu llave completa de Supabase
+          TELEGRAM_TOKEN: '8979727245:AAGks6dgCdNm9wz7oM3Z8vOp6OFIYB6eTAc' # Tu token funcional de Telegram
           TELEGRAM_CHAT_ID: '1879289573'
         run: |
           node -e "
           const https = require('https');
 
-          console.log('--- PRUEBA DIRECTA DE TELEGRAM ---');
+          const ahora = new Date();
+          
+          // Genera la hora actual y los últimos 3 minutos como margen de tolerancia
+          const obtenerHoraHHMM = (fecha) => {
+            const op = { timeZone: 'America/Mexico_City', hour: '2-digit', minute: '2-digit', hour12: false };
+            return new Intl.DateTimeFormat('es-MX', op).format(fecha).trim();
+          };
 
-          const url = \`\${process.env.SUPABASE_URL}/rest/v1/medicamentos?limit=1\`;
+          const horasValidas = [];
+          for (let i = 0; i < 3; i++) {
+            const f = new Date(ahora.getTime() - i * 60000);
+            horasValidas.push(obtenerHoraHHMM(f));
+          }
+
+          console.log('--- REVISIÓN DE ALARMAS HABITSKIN ---');
+          console.log('Hora actual y margen de revisión (HH:MM):', horasValidas);
+
+          const url = \`\${process.env.SUPABASE_URL}/rest/v1/medicamentos?momento=eq.especifica\`;
           
           const req = https.request(url, {
             headers: {
@@ -34,38 +49,40 @@ jobs:
             res.on('end', () => {
               try {
                 const items = JSON.parse(body);
-                if (Array.isArray(items) && items.length > 0) {
-                  const item = items[0];
-                  const emoji = item.tipo === 'skincare' ? '🧴' : '💊';
-                  const mensaje = \`🚨 *PRUEBA DE CONEXIÓN EXITOSA*\n\n\${emoji} *\${item.nombre}*\n📌 *Dosis:* \${item.dosis || 'Tomar según indicación'}\n🕒 *Hora registrada:* \${item.hora || 'Sin hora'}\n\n¡Tu bot de Telegram está funcionando perfectamente!\`;
-                  
-                  const telegramUrl = \`https://api.telegram.org/bot\${process.env.TELEGRAM_TOKEN}/sendMessage\`;
-                  const postData = JSON.stringify({
-                    chat_id: process.env.TELEGRAM_CHAT_ID,
-                    text: mensaje,
-                    parse_mode: 'Markdown'
-                  });
-
-                  const tReq = https.request(telegramUrl, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Content-Length': Buffer.byteLength(postData)
-                    }
+                if (Array.isArray(items)) {
+                  const coincidentes = items.filter(item => {
+                    if (!item.hora) return false;
+                    const horaGuardada = String(item.hora).trim().substring(0, 5);
+                    return horasValidas.includes(horaGuardada);
                   });
                   
-                  tReq.on('response', (tRes) => {
-                    console.log('Estado de envío a Telegram:', tRes.statusCode);
-                  });
+                  console.log(\`Se encontraron \${coincidentes.length} alarma(s) para enviar.\`);
 
-                  tReq.write(postData);
-                  tReq.end();
-                  console.log(\`✅ Enviando notificación de prueba para: \${item.nombre}\`);
-                } else {
-                  console.log('No se encontraron registros en Supabase para enviar.');
+                  coincidentes.forEach(item => {
+                    const emoji = item.tipo === 'skincare' ? '🧴' : '💊';
+                    const mensaje = \`⏰ *¡HORA DE TU MEDICAMENTO!*\n\n\${emoji} *\${item.nombre}*\n📌 *Dosis:* \${item.dosis || 'Tomar según indicación'}\n🕒 *Hora:* \${item.hora}\`;
+                    
+                    const telegramUrl = \`https://api.telegram.org/bot\${process.env.TELEGRAM_TOKEN}/sendMessage\`;
+                    const postData = JSON.stringify({
+                      chat_id: process.env.TELEGRAM_CHAT_ID,
+                      text: mensaje,
+                      parse_mode: 'Markdown'
+                    });
+
+                    const tReq = https.request(telegramUrl, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(postData)
+                      }
+                    });
+                    tReq.write(postData);
+                    tReq.end();
+                    console.log(\`✅ Notificación enviada para: \${item.nombre}\`);
+                  });
                 }
               } catch (e) {
-                console.error('Error parseando respuesta:', e);
+                console.error('Error procesando respuesta:', e);
               }
             });
           });
