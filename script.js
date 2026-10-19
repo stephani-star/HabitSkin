@@ -1,9 +1,9 @@
 // CONFIGURACIÓN DE SUPABASE
 const SUPABASE_URL = 'https://yrqxopmgwwzrgzwcdusy.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_kAdWCJcRLBWtS1d2tyzi3Q_dg--5zK4'; // Pega tu llave completa aquí
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycXhvcG1nd3d6cmd6d2NkdXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyODU2MzIsImV4cCI6MjEwNjg2MTYzMn0.ogv_ZIr8STqkMJZhRlQ8XtuXL76IFdnU9t3evJKj78w'; // Pega tu llave completa aquí
 
 // CONFIGURACIÓN DE TELEGRAM
-const TELEGRAM_TOKEN = '8979727245:AAGks6dgCdNm9wZ7oM3Z8VOp60FIYB6eTAc'; // Pega aquí tu token ACTIVO de BotFather
+const TELEGRAM_TOKEN = '8979727245:AAGWbBrvJxppL5e6KwHlzBtrPnw8OgKUaH8'; // Pega aquí tu token ACTIVO de BotFather
 const TELEGRAM_CHAT_ID = '1879289573';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
