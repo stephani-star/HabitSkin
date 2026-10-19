@@ -79,41 +79,31 @@ if (formulario) {
   formulario.addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    // Función que busca valores probando por ID, Name o Placeholder en el HTML
-    const obtenerValorSmart = (listaBusqueda) => {
-      for (const identificador of listaBusqueda) {
-        let el = document.getElementById(identificador) || 
-                 document.querySelector(`[name="${identificador}"]`) || 
-                 document.querySelector(`[placeholder*="${identificador}"]`);
-        if (el && el.value && el.value.trim() !== '') {
-          return el.value.trim();
-        }
-      }
-      return '';
-    };
+    // Obtención de elementos directa basada en tu HTML
+    const tipoVal = document.getElementById('tipo') ? document.getElementById('tipo').value : 'medicina';
+    const productoVal = document.getElementById('producto') ? document.getElementById('producto').value.trim() : '';
+    const dosisVal = document.getElementById('cantidad') ? document.getElementById('cantidad').value.trim() : '';
+    const momentoVal = document.getElementById('momento') ? document.getElementById('momento').value : '';
+    const horaVal = document.getElementById('hora') ? document.getElementById('hora').value : '';
+    const fechaTerminoVal = document.getElementById('fechaTermino') ? document.getElementById('fechaTermino').value : '';
+    const notasVal = document.getElementById('notas') ? document.getElementById('notas').value.trim() : '';
 
-    // Función especial para obtener TODOS los días seleccionados (checkboxes o multiselect)
-    const obtenerDiasSeleccionados = () => {
-      const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+    // Obtener días seleccionados o "Diario"
+    const chkDiario = document.getElementById('diario');
+    let diasTexto = '';
+
+    if (chkDiario && chkDiario.checked) {
+      diasTexto = 'Diario';
+    } else {
+      const checkboxes = document.querySelectorAll('input[name="dias"]:checked');
       if (checkboxes.length > 0) {
-        const dias = Array.from(checkboxes).map(cb => cb.value || cb.parentNode.textContent.trim()).filter(Boolean);
-        if (dias.length > 0) return dias.join(', ');
+        const diasArr = Array.from(checkboxes).map(cb => cb.value);
+        diasTexto = diasArr.join(', ');
       }
-      return obtenerValorSmart(['dias', 'diasUso', 'frecuencia']);
-    };
-
-    // Obtención de los valores del formulario
-    const nombreVal = obtenerValorSmart(['nombre', 'producto', 'nombreMedicamento', 'medicamento', 'Producto', 'Serum']);
-    const tipoVal = obtenerValorSmart(['tipo', 'categoria']) || 'medicamento';
-    const dosisVal = obtenerValorSmart(['dosis', 'dosisAplicacion', 'dosis-medicamento', 'cantidad', 'aplicacion', 'tableta', 'gotas']);
-    const momentoVal = obtenerValorSmart(['momento', 'horario']);
-    const horaVal = obtenerValorSmart(['hora', 'horaEspecifica']);
-    const diasVal = obtenerDiasSeleccionados();
-    const terminaVal = obtenerValorSmart(['termina', 'fechaFin', 'fechaTermino']);
-    const notasVal = obtenerValorSmart(['notas', 'observaciones', 'indicaciones']);
+    }
 
     const nuevoItem = {
-      nombre: nombreVal,
+      nombre: productoVal,
       tipo: tipoVal,
       dosis: dosisVal,
       momento: momentoVal,
@@ -132,18 +122,27 @@ if (formulario) {
 
     // --- CONSTRUCCIÓN DEL MENSAJE COMPLETO DE TELEGRAM ---
     const emojiTipo = tipoVal === 'skincare' ? '🧴' : '💊';
-    const horarioTexto = momentoVal === 'especifica' ? `⏰ ${horaVal}` : momentoVal;
+    
+    // Mapeo amigable de momentos
+    const opcionesMomento = {
+      'desayuno': '☀️ Mañana / Desayuno',
+      'comida': '🌤️ Tarde / Comida',
+      'cena': '🌙 Noche / Cena',
+      'manana-noche': '☀️🌙 Mañana y Noche',
+      'especifica': `⏰ ${horaVal}`
+    };
+    const horarioTexto = opcionesMomento[momentoVal] || momentoVal;
 
     let mensajeTelegram = `✨ *¡Nuevo Recordatorio Programado!* ✨\n\n` +
-      `${emojiTipo} *Producto:* ${nombreVal || 'Sin nombre'}\n` +
+      `${emojiTipo} *Producto:* ${productoVal || 'Sin nombre'}\n` +
       `📌 *Dosis:* ${dosisVal || 'Según indicación'}\n` +
       `⏰ *Momento:* ${horarioTexto || 'No especificado'}`;
 
-    if (diasVal) {
-      mensajeTelegram += `\n📅 *Días:* ${diasVal}`;
+    if (diasTexto) {
+      mensajeTelegram += `\n📅 *Días:* ${diasTexto}`;
     }
-    if (terminaVal) {
-      mensajeTelegram += `\n🛑 *Termina:* ${terminaVal}`;
+    if (fechaTerminoVal) {
+      mensajeTelegram += `\n🛑 *Termina:* ${fechaTerminoVal}`;
     }
     if (notasVal) {
       mensajeTelegram += `\n📝 *Notas:* ${notasVal}`;
@@ -159,7 +158,7 @@ if (formulario) {
           parse_mode: 'Markdown'
         })
       });
-      console.log('Notificación enviada a Telegram con formato completo');
+      console.log('Notificación enviada a Telegram');
     } catch (errTelegram) {
       console.error('Error al enviar mensaje a Telegram:', errTelegram);
     }
