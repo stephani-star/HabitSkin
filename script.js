@@ -1,9 +1,9 @@
 // CONFIGURACIÓN DE SUPABASE
 const SUPABASE_URL = 'https://yrqxopmgwwzrgzwcdusy.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycXhvcG1nd3d6cmd6d2NkdXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyODU2MzIsImV4cCI6MjEwNjg2MTYzMn0.ogv_ZIr8STqkMJZhRlQ8XtuXL76IFdnU9t3evJKj78w'; // Pega tu llave completa aquí
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlycXhvcG1nd3d6cmd6d2NkdXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyODU2MzIsImV4cCI6MjEwNjg2MTYzMn0.ogv_ZIr8STqkMJZhRlQ8XtuXL76IFdnU9t3evJKj78w';
 
 // CONFIGURACIÓN DE TELEGRAM
-const TELEGRAM_TOKEN = '8979727245:AAGWbBrvJxppL5e6KwHlzBtrPnw8OgKUaH8'; // Pega aquí tu token ACTIVO de BotFather
+const TELEGRAM_TOKEN = '8979727245:AAGWbBrvJxppL5e6KwHlzBtrPnw8OgKUaH8';
 const TELEGRAM_CHAT_ID = '1879289573';
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -79,24 +79,28 @@ if (formulario) {
   formulario.addEventListener('submit', async function(e) {
     e.preventDefault();
 
-    // Función auxiliar para obtener valores probando varios IDs posibles en tu HTML
-    const obtenerValor = (ids) => {
-      for (const id of ids) {
-        const el = document.getElementById(id);
-        if (el && el.value.trim() !== '') return el.value.trim();
+    // Función que busca valores probando por ID, Name o Placeholder en el HTML
+    const obtenerValorSmart = (listaBusqueda) => {
+      for (const identificador of listaBusqueda) {
+        let el = document.getElementById(identificador) || 
+                 document.querySelector(`[name="${identificador}"]`) || 
+                 document.querySelector(`[placeholder*="${identificador}"]`);
+        if (el && el.value && el.value.trim() !== '') {
+          return el.value.trim();
+        }
       }
       return '';
     };
 
-    // Lectura de campos
-    const nombreVal = obtenerValor(['nombre', 'producto', 'nombreMedicamento', 'medicamento']);
-    const tipoVal = obtenerValor(['tipo', 'categoria']) || 'medicamento';
-    const dosisVal = obtenerValor(['dosis', 'dosisAplicacion']);
-    const momentoVal = obtenerValor(['momento', 'horario']);
-    const horaVal = obtenerValor(['hora', 'horaEspecifica']);
-    const diasVal = obtenerValor(['dias', 'diasUso', 'frecuencia']);
-    const terminaVal = obtenerValor(['termina', 'fechaFin', 'fechaTermino']);
-    const notasVal = obtenerValor(['notas', 'observaciones', 'indicaciones']);
+    // Obtención de los valores del formulario
+    const nombreVal = obtenerValorSmart(['nombre', 'producto', 'nombreMedicamento', 'medicamento', 'Producto', 'Serum']);
+    const tipoVal = obtenerValorSmart(['tipo', 'categoria']) || 'medicamento';
+    const dosisVal = obtenerValorSmart(['dosis', 'dosisAplicacion', 'dosis-medicamento', 'cantidad', 'aplicacion', 'tableta', 'gotas']);
+    const momentoVal = obtenerValorSmart(['momento', 'horario']);
+    const horaVal = obtenerValorSmart(['hora', 'horaEspecifica']);
+    const diasVal = obtenerValorSmart(['dias', 'diasUso', 'frecuencia']);
+    const terminaVal = obtenerValorSmart(['termina', 'fechaFin', 'fechaTermino']);
+    const notasVal = obtenerValorSmart(['notas', 'observaciones', 'indicaciones']);
 
     const nuevoItem = {
       nombre: nombreVal,
