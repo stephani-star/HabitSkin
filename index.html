@@ -48,9 +48,6 @@
 
 
                 <label>¿Qué días debes usarlo?:</label>
-                <label>
-                  <input type="checkbox" id="diario" name="dias" value="Diario"> Diario
-                </label>
                 <div class="contenedor-dias">
                     <label class="dia-check"><input type="checkbox" name="dias" value="Lun"> L</label>
                     <label class="dia-check"><input type="checkbox" name="dias" value="Mar"> M</label>
@@ -61,6 +58,13 @@
                     <label class="dia-check"><input type="checkbox" name="dias" value="Dom"> D</label>
                 </div>
 
+                <div class="contenedor-diario">
+                    <label class="opcion-diario">
+                        <input type="checkbox" id="diario" name="dias" value="Diario">
+                        <span>Diario</span>
+                    </label>
+                </div>
+                
                 <label for="fechaTermino">¿Hasta cuándo? (Fecha de término):</label>
                 <input type="date" id="fechaTermino">
 
