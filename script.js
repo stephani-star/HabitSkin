@@ -92,13 +92,23 @@ if (formulario) {
       return '';
     };
 
+    // Función especial para obtener TODOS los días seleccionados (checkboxes o multiselect)
+    const obtenerDiasSeleccionados = () => {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+      if (checkboxes.length > 0) {
+        const dias = Array.from(checkboxes).map(cb => cb.value || cb.parentNode.textContent.trim()).filter(Boolean);
+        if (dias.length > 0) return dias.join(', ');
+      }
+      return obtenerValorSmart(['dias', 'diasUso', 'frecuencia']);
+    };
+
     // Obtención de los valores del formulario
     const nombreVal = obtenerValorSmart(['nombre', 'producto', 'nombreMedicamento', 'medicamento', 'Producto', 'Serum']);
     const tipoVal = obtenerValorSmart(['tipo', 'categoria']) || 'medicamento';
     const dosisVal = obtenerValorSmart(['dosis', 'dosisAplicacion', 'dosis-medicamento', 'cantidad', 'aplicacion', 'tableta', 'gotas']);
     const momentoVal = obtenerValorSmart(['momento', 'horario']);
     const horaVal = obtenerValorSmart(['hora', 'horaEspecifica']);
-    const diasVal = obtenerValorSmart(['dias', 'diasUso', 'frecuencia']);
+    const diasVal = obtenerDiasSeleccionados();
     const terminaVal = obtenerValorSmart(['termina', 'fechaFin', 'fechaTermino']);
     const notasVal = obtenerValorSmart(['notas', 'observaciones', 'indicaciones']);
 
